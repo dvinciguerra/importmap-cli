@@ -1,0 +1,63 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+$LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
+
+require 'thor'
+require 'importmap_cli'
+
+module ImportmapCLI
+  # importmap cli application class
+  class App < Thor
+    def self.exit_on_failure?
+      false
+    end
+
+    desc 'add [*PACKAGES]', 'Pin new packages'
+    option :env, type: :string, aliases: :e, default: 'production'
+    option :from, type: :string, aliases: :f, default: 'jspm'
+    def add(*packages)
+      main.add(packages:, options:)
+    end
+
+    desc 'remove [*PACKAGES]', 'Unpin existing packages'
+    option :env, type: :string, aliases: :e, default: 'production'
+    option :from, type: :string, aliases: :f, default: 'jspm'
+    def remove(*packages)
+      main.remove(packages:, options:)
+    end
+
+    desc 'json', 'Show importmap in json format'
+    def json
+      main.json
+    end
+
+    desc 'audit', 'Run a security audit'
+    def audit
+      main.audit
+    end
+
+    desc 'outdated', 'Check for outdated packages'
+    def outdated
+      main.outdated
+    end
+
+    desc 'update', 'Update outdated package pins'
+    def update
+      main.update
+    end
+
+    desc 'packages', 'Print out packages with version numbers'
+    def packages
+      main.packages
+    end
+
+    private
+
+    def main
+      ImportmapCLI::Main.new
+    end
+  end
+end
+
+ImportmapCLI::App.start
