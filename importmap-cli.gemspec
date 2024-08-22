@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require_relative 'lib/importmap/cli/version'
+require_relative 'lib/importmap_cli/version'
 
 Gem::Specification.new do |spec|
   spec.name = 'importmap-cli'
-  spec.version = Importmap::Cli::VERSION
+  spec.version = ImportmapCLI::VERSION
   spec.authors = ['Daniel Vinciguerra']
   spec.email = ['daniel.vinciguerra@bivee.com.br']
 

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-module Importmap
-  module Cli
-    VERSION = '0.1.0'
-  end
+module ImportmapCLI
+  VERSION = '0.1.0'
 end
