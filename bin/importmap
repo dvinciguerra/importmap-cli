@@ -16,6 +16,7 @@ module ImportmapCLI
     desc 'add [*PACKAGES]', 'Pin new packages'
     option :env, type: :string, aliases: :e, default: 'production'
     option :from, type: :string, aliases: :f, default: 'jspm'
+    option :format, type: :string, repeatable: false
     def add(*packages)
       main.add(packages:, options:)
     end

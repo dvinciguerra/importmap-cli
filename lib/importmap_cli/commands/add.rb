@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'uri'
+require 'yaml'
 require 'json'
 require 'net/http'
 require 'fileutils'
@@ -13,8 +14,8 @@ module ImportmapCLI
       RESOURCE_URL = URI('https://api.jspm.io/generate').freeze
 
       def initialize(packages:, options:)
-        @packages = packages
-        @options = options
+        @options = Hash(options)
+        @packages = current_packages + packages
       end
 
       def run
@@ -27,26 +28,25 @@ module ImportmapCLI
           FileUtils.mkdir_p("#{ImportmapCLI.current_dir}/vendor/javascript")
 
           # ensure importmap.rb exists
-          unless File.exist?("#{ImportmapCLI.current_dir}/config/importmap.rb")
-            puts "[error] #{ImportmapCLI.current_dir}/config/importmap.rb file does not exist"
+          unless File.exist?("#{ImportmapCLI.current_dir}#{filename}")
+            puts "[error] #{ImportmapCLI.current_dir}#{filename} file does not exist"
             exit 1
           end
 
-          @importmap = File.read("#{ImportmapCLI.current_dir}/config/importmap.rb")
-
-          payload.fetch(:imports, {}).each do |package, url|
-            puts "[info] pinning #{package} to #{url}"
-
-            unless @importmap.match?(/^pin\s+['"]#{package}["']/)
-              @importmap = "#{@importmap}\npin '#{package}', to: '#{url}' # #{package_version_from(url)}"
-            end
-          end
-
-          File.write("#{ImportmapCLI.current_dir}/config/importmap.rb", @importmap)
+          importmap_generated = build_importmap(payload)
+          File.write("#{ImportmapCLI.current_dir}#{filename}", importmap_generated)
         end
       end
 
       private
+
+      def filename
+        @filename ||= "/config/importmap.#{file_extension}"
+      end
+
+      def file_extension
+        @file_extension ||= Hash(@options).fetch('format', 'rb')
+      end
 
       def same_filename?(package, filename)
         "#{package.gsub('/', '--')}.js" == filename
@@ -54,6 +54,37 @@ module ImportmapCLI
 
       def package_version_from(url)
         url.scan(/@(\d+\.\d+.\d+)/)&.flatten&.first
+      end
+
+      def current_packages
+        file_content = File.read("#{ImportmapCLI.current_dir}#{filename}")
+
+        case file_extension
+        when 'json'
+          JSON.parse(file_content, symbolize_names: true).fetch(:imports, {}).keys
+        when 'yaml'
+          YAML.load(file_content).fetch(:imports, {}).keys
+        else
+          file_content.scan(/pin\s+['"](.+)['"],?.*/).flatten
+        end
+      end
+
+      def build_importmap(payload)
+        case file_extension
+        when 'json'
+          JSON.pretty_generate(payload)
+        when 'yaml'
+          YAML.dump(payload)
+        else
+          importmap = ''
+
+          payload.fetch(:imports, {}).each do |package, url|
+            puts "[info] pinning #{package} to #{url}"
+            importmap += "#{importmap}\npin '#{package}', to: '#{url}' # #{package_version_from(url)}"
+          end
+
+          importmap
+        end
       end
 
       def request_body
